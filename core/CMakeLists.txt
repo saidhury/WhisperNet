@@ -8,6 +8,10 @@ add_library(whispernet_core SHARED
     src/whisper_node.cpp
 )
 
+target_compile_definitions(whispernet_core PRIVATE BUILDING_DLL)
+
 target_include_directories(whispernet_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/../backend/lib)
