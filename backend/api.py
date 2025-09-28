@@ -2,6 +2,7 @@ import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List
 import json
+from bindings import core_lib
 
 loop = None
 
@@ -30,25 +31,27 @@ def handle_incoming_message(message: bytes, sender_ip: bytes):
         data = json.loads(message_str)
         if data.get("type") == "DISCOVERY":
             if sender_ip_str not in discovered_peers:
-                print(f"Discovered new peer: {sender_ip_str}")
                 discovered_peers.add(sender_ip_str)
                 update_message = {"type": "PEER_LIST_UPDATE", "payload": list(discovered_peers)}
-                if loop:
-                    asyncio.run_coroutine_threadsafe(manager.broadcast(json.dumps(update_message)), loop)
-    except (json.JSONDecodeError, RuntimeError) as e:
-        print(f"Error processing incoming message: {e}")
+                if loop: asyncio.run_coroutine_threadsafe(manager.broadcast(json.dumps(update_message)), loop)
+        elif data.get("type") == "MESSAGE":
+             update_message = {"type": "NEW_MESSAGE", "payload": {"sender": sender_ip_str, "content": data.get("content")}}
+             if loop: asyncio.run_coroutine_threadsafe(manager.broadcast(json.dumps(update_message)), loop)
+    except (json.JSONDecodeError, RuntimeError): pass
 
-@router.get("/peers")
-async def get_peers():
-    return list(discovered_peers)
+@router.post("/send")
+async def send_message(message: dict):
+    recipient_ip = message.get('recipient_ip')
+    content = message.get('content')
+    payload = {"type": "MESSAGE", "content": content}
+    message_bytes = json.dumps(payload).encode('utf-8')
+    core_lib.send_udp_message(message_bytes, recipient_ip.encode('utf-8'), 8888)
+    return {"status": "message sent"}
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
-    initial_data = {"type": "PEER_LIST_UPDATE", "payload": list(discovered_peers)}
-    await websocket.send_text(json.dumps(initial_data))
+    await websocket.send_text(json.dumps({"type": "PEER_LIST_UPDATE", "payload": list(discovered_peers)}))
     try:
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        while True: await websocket.receive_text()
+    except WebSocketDisconnect: manager.disconnect(websocket)
