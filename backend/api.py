@@ -131,3 +131,20 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         print(f"Client disconnected: {websocket.client.host}")
+
+@router.post("/test/discover")
+async def test_discover(data: dict):
+    sender_ip = data.get('sender_ip')
+    if sender_ip and sender_ip not in discovered_peers:
+        discovered_peers.add(sender_ip)
+        update = {"type": "PEER_LIST_UPDATE", "payload": list(discovered_peers)}
+        await manager.broadcast(json.dumps(update))
+    return {"status": "ok"}
+
+@router.post("/test/message")
+async def test_message(data: dict):
+    sender_ip = data.get('sender_ip')
+    content = data.get('content')
+    update = {"type": "NEW_MESSAGE", "payload": {"sender": sender_ip, "content": content}}
+    await manager.broadcast(json.dumps(update))
+    return {"status": "ok"}
