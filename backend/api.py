@@ -6,7 +6,7 @@ import socket
 from bindings import core_lib
 import netifaces
 
-BROADCAST_IP = '192.168.56.255'
+BROADCAST_IP = '255.255.255.255'
 
 def get_all_own_ips():
     ips = []
