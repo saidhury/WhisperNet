@@ -1,6 +1,68 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Terminal, Zap } from 'lucide-react';
 
+// Component to render message content with clickable links
+const MessageContent = ({ content }) => {
+  // URL regex pattern that matches http://, https://, and www. URLs
+  const URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<]+\b/g;
+  const parts = [];
+  let lastIndex = 0;
+
+  // Use matchAll to safely iterate URLs
+  const matches = [...content.matchAll(URL_PATTERN)];
+
+  matches.forEach((match) => {
+    const url = match[0];
+    const startIndex = match.index;
+
+    // Add plain text before the link
+    if (startIndex > lastIndex) {
+      parts.push(content.slice(lastIndex, startIndex));
+    }
+
+    // Normalize link (add https:// for www.)
+    let href = url.startsWith('www.') ? `https://${url}` : url;
+
+    // ✅ Validate URL scheme for security
+    try {
+      const urlObj = new URL(href);
+      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+        // Skip invalid or non-http(s) URLs
+        parts.push(url);
+        lastIndex = startIndex + url.length;
+        return;
+      }
+    } catch {
+      // If invalid URL, render as plain text
+      parts.push(url);
+      lastIndex = startIndex + url.length;
+      return;
+    }
+
+    // Add clickable link
+    parts.push(
+      <a
+        key={startIndex}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-500 underline hover:text-blue-700"
+      >
+        {url}
+      </a>
+    );
+
+    lastIndex = startIndex + url.length;
+  });
+
+  // Add remaining text after last link
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return <>{parts}</>;
+};
+
 function App() {
   const [peers, setPeers] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -140,7 +202,9 @@ function App() {
                   [{new Date().toLocaleTimeString()}] {m.sender === 'you' ? '< OUT' : '> IN'}
                 </div>
                 <div className={`pl-4 border-l-2 ${m.sender === 'you' ? 'border-green-600' : 'border-green-400'}`}>
-                  <span className="text-green-400">{m.content}</span>
+                  <span className="text-green-400">
+                    <MessageContent content={m.content} />
+                  </span>
                 </div>
               </div>
             ))
