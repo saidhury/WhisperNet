@@ -87,6 +87,13 @@ def handle_incoming_message(message: bytes, sender_ip: bytes):
 
     except (json.JSONDecodeError, RuntimeError) as e:
         print(f"Error processing incoming message: {e}")
+        
+@router.get("/health")
+async def health_check():
+    """
+    A simple endpoint to confirm that the API service is running.
+    """
+    return {"status": "ok"}
 
 @router.get("/peers")
 async def get_peers():
