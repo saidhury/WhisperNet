@@ -45,7 +45,9 @@ manager = ConnectionManager()
 router = APIRouter()
 
 # discovered_peers previously held IP strings; switch to a mapping of ip->nickname
+
 discovered_peers = {}
+_peers_lock = threading.Lock()
 
 def handle_incoming_message(message: bytes, sender_ip: bytes):
     global loop
