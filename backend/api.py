@@ -1,12 +1,15 @@
 import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from typing import List
+from typing import List, Dict
 import json
 import socket
+import time
 from bindings import core_lib
 import netifaces
 
 BROADCAST_IP = '255.255.255.255'
+PEER_TIMEOUT = 15  # Seconds until a peer is considered stale
+PEER_CHECK_INTERVAL = 5 # How often to check for stale peers
 
 def get_all_own_ips():
     ips = []
@@ -44,7 +47,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 router = APIRouter()
 
-discovered_peers = set()
+discovered_peers: Dict[str, float] = {} # Maps IP to last_seen timestamp
 
 def handle_incoming_message(message: bytes, sender_ip: bytes):
     global loop
@@ -59,13 +62,15 @@ def handle_incoming_message(message: bytes, sender_ip: bytes):
     try:
         data = json.loads(message_str)
         if data.get("type") == "DISCOVERY":
-            if sender_ip_str not in discovered_peers:
+            is_new_peer = sender_ip_str not in discovered_peers
+            discovered_peers[sender_ip_str] = time.time()
+
+            if is_new_peer:
                 print(f"Discovered new peer: {sender_ip_str}")
-                discovered_peers.add(sender_ip_str)
                 
                 update_message = {
                     "type": "PEER_LIST_UPDATE",
-                    "payload": list(discovered_peers)
+                    "payload": list(discovered_peers.keys())
                 }
                 
                 if loop:
@@ -88,9 +93,32 @@ def handle_incoming_message(message: bytes, sender_ip: bytes):
     except (json.JSONDecodeError, RuntimeError) as e:
         print(f"Error processing incoming message: {e}")
 
+async def check_stale_peers_task():
+    """Periodically checks for and removes stale peers."""
+    while True:
+        await asyncio.sleep(PEER_CHECK_INTERVAL)
+        
+        current_time = time.time()
+        stale_peers = [
+            ip for ip, last_seen in discovered_peers.items() 
+            if current_time - last_seen > PEER_TIMEOUT
+        ]
+
+        if stale_peers:
+            print(f"Removing stale peers: {stale_peers}")
+            for peer in stale_peers:
+                del discovered_peers[peer]
+            
+            update_message = {
+                "type": "PEER_LIST_UPDATE",
+                "payload": list(discovered_peers.keys())
+            }
+            await manager.broadcast(json.dumps(update_message))
+
+
 @router.get("/peers")
 async def get_peers():
-    return list(discovered_peers)
+    return list(discovered_peers.keys())
 
 @router.post("/send")
 async def send_message(message: dict):
@@ -121,7 +149,7 @@ async def websocket_endpoint(websocket: WebSocket):
     print(f"New client connected: {websocket.client.host}")
     initial_data = {
         "type": "PEER_LIST_UPDATE",
-        "payload": list(discovered_peers)
+        "payload": list(discovered_peers.keys())
     }
     await websocket.send_text(json.dumps(initial_data))
     
@@ -135,10 +163,12 @@ async def websocket_endpoint(websocket: WebSocket):
 @router.post("/test/discover")
 async def test_discover(data: dict):
     sender_ip = data.get('sender_ip')
-    if sender_ip and sender_ip not in discovered_peers:
-        discovered_peers.add(sender_ip)
-        update = {"type": "PEER_LIST_UPDATE", "payload": list(discovered_peers)}
-        await manager.broadcast(json.dumps(update))
+    if sender_ip:
+        is_new = sender_ip not in discovered_peers
+        discovered_peers[sender_ip] = time.time()
+        if is_new:
+            update = {"type": "PEER_LIST_UPDATE", "payload": list(discovered_peers.keys())}
+            await manager.broadcast(json.dumps(update))
     return {"status": "ok"}
 
 @router.post("/test/message")

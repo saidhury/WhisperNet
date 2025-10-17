@@ -23,7 +23,15 @@ function App() {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'PEER_LIST_UPDATE') {
-        setPeers(data.payload);
+        const newPeers = data.payload;
+        setPeers(newPeers);
+        // If the selected peer is no longer in the list, deselect them.
+        setSelectedPeer(currentSelectedPeer => {
+          if (currentSelectedPeer && !newPeers.includes(currentSelectedPeer)) {
+            return null;
+          }
+          return currentSelectedPeer;
+        });
       }
       if (data.type === 'NEW_MESSAGE') {
         setMessages(prev => [...prev, data.payload]);
