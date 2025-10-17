@@ -4,3 +4,4 @@ python-multipart
 netifaces
 pytest
 pytest-cov
+httpx
