@@ -55,6 +55,13 @@ function App() {
     setText('');
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-black text-green-400 font-mono overflow-hidden" style={{ fontFamily: '"Courier New", monospace' }}>
       <aside className="w-64 bg-black border-r-2 border-green-400 flex flex-col overflow-hidden">
@@ -141,22 +148,24 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t-2 border-green-400 bg-black p-4" onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(e)}>
-          <div className="flex items-center gap-2">
-            <span className="text-green-400">$</span>
-            <input
-              type="text"
+        <div className="border-t-2 border-green-400 bg-black p-4">
+          <div className="flex gap-2">
+            <span className="text-green-400 leading-10">$</span>
+            <textarea
               value={text}
               onChange={e => setText(e.target.value)}
-              placeholder={selectedPeer ? 'Enter message...' : 'Select peer first...'}
+              onKeyDown={handleKeyDown}
+              placeholder={selectedPeer ? 'Enter message... (Shift+Enter for new line)' : 'Select peer first...'}
               disabled={!selectedPeer}
-              className="flex-1 bg-black border-0 outline-none text-green-400 placeholder-green-700 caret-green-400"
+              className="flex-1 bg-black border-0 outline-none text-green-400 placeholder-green-700 caret-green-400 resize-none overflow-y-auto leading-10"
+              style={{ minHeight: '40px', maxHeight: '120px' }}
+              rows={1}
               autoFocus
             />
             <button
               onClick={handleSendMessage}
               disabled={!selectedPeer || !text.trim()}
-              className="text-green-400 hover:text-green-300 disabled:text-green-700 transition-colors"
+              className="text-green-400 hover:text-green-300 disabled:text-green-700 transition-colors self-start leading-10"
             >
               <Send size={18} />
             </button>
