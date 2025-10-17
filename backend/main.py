@@ -4,11 +4,11 @@ import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import api
-from dotenv import load_dotenv
+from dotenv import load_dotenv 
 from bindings import core_lib, ON_MESSAGE_RECEIVED_FUNC
 from backend import config
 
-load_dotenv() 
+load_dotenv()
 
 UDP_PORT = 8888
 c_callback_handler = ON_MESSAGE_RECEIVED_FUNC(api.handle_incoming_message)
@@ -17,7 +17,7 @@ app = FastAPI(title="WhisperNet Backend")
 
 origins = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "http://12.0.0.1:5173",
 ]
 
 app.add_middleware(
@@ -31,12 +31,12 @@ app.add_middleware(
 app.include_router(api.router, prefix="/api")
 
 async def discover_peers_task():
-    """Sends out a single discovery packet periodically."""
+    """Sends out a single, correct discovery packet periodically."""
     while True:
         discovery_payload = {
             "type": "DISCOVERY",
             "nickname": config.NICKNAME,
-            "version": config.PROTOCOL_VERSION, # <-- Must include version
+            "version": config.PROTOCOL_VERSION, 
         }
         discovery_message = json.dumps(discovery_payload)
         broadcast_address = api.BROADCAST_IP.encode('utf-8')
@@ -55,7 +55,7 @@ async def startup_event():
     
     # Start all tasks correctly
     asyncio.create_task(discover_peers_task())
-    asyncio.create_task(api.check_stale_peers_task()) # <-- Restore this task
+    asyncio.create_task(api.check_stale_peers_task()) 
 
 
 if __name__ == "__main__":
