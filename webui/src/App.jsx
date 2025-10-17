@@ -1,47 +1,65 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Terminal, Zap } from 'lucide-react';
 
-// URL regex pattern that matches http://, https://, and www. URLs
-const URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<]+\b/g;
-
 // Component to render message content with clickable links
 const MessageContent = ({ content }) => {
+  // URL regex pattern that matches http://, https://, and www. URLs
+  const URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<]+\b/g;
   const parts = [];
   let lastIndex = 0;
-  let match;
 
-  // Find all URLs in the content
-  while ((match = URL_PATTERN.exec(content)) !== null) {
+  // Use matchAll to safely iterate URLs
+  const matches = [...content.matchAll(URL_PATTERN)];
+
+  matches.forEach((match) => {
     const url = match[0];
     const startIndex = match.index;
-    
-    // Add text before the URL
+
+    // Add plain text before the link
     if (startIndex > lastIndex) {
       parts.push(content.slice(lastIndex, startIndex));
     }
-    
-    // Add the URL as a link
-    const href = url.startsWith('www.') ? `https://${url}` : url;
+
+    // Normalize link (add https:// for www.)
+    let href = url.startsWith('www.') ? `https://${url}` : url;
+
+    // ✅ Validate URL scheme for security
+    try {
+      const urlObj = new URL(href);
+      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+        // Skip invalid or non-http(s) URLs
+        parts.push(url);
+        lastIndex = startIndex + url.length;
+        return;
+      }
+    } catch {
+      // If invalid URL, render as plain text
+      parts.push(url);
+      lastIndex = startIndex + url.length;
+      return;
+    }
+
+    // Add clickable link
     parts.push(
       <a
         key={startIndex}
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-blue-400 hover:text-blue-300 underline"
+        className="text-blue-500 underline hover:text-blue-700"
       >
         {url}
       </a>
     );
-    
+
     lastIndex = startIndex + url.length;
-  }
-  
-  // Add remaining text after the last URL
+  });
+
+  // Add remaining text after last link
   if (lastIndex < content.length) {
     parts.push(content.slice(lastIndex));
   }
-  
+
   return <>{parts}</>;
 };
 
