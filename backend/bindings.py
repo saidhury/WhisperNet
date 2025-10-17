@@ -73,6 +73,8 @@ except Exception as e:
             addr = addr_bytes.decode('utf-8') if isinstance(addr_bytes, (bytes, bytearray)) else str(addr_bytes)
             s = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
             try:
+                # allow broadcast packets in fallback
+                s.setsockopt(_socket.SOL_SOCKET, _socket.SO_BROADCAST, 1)
                 s.sendto(message_bytes, (addr, port))
             except Exception:
                 # best-effort in fallback
