@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, Terminal, Zap } from 'lucide-react';
 
 function App() {
+  // peers will be array of { ip, nickname }
   const [peers, setPeers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [selectedPeer, setSelectedPeer] = useState(null);
@@ -82,15 +83,21 @@ function App() {
             {peers.length > 0 ? (
               peers.map(peer => (
                 <li 
-                  key={peer}
-                  onClick={() => setSelectedPeer(peer)}
+                  key={peer.ip}
+                  onClick={() => setSelectedPeer(peer.ip)}
                   className={`p-2 rounded cursor-pointer text-sm transition-all ${
-                    selectedPeer === peer 
+                    selectedPeer === peer.ip 
                       ? 'bg-green-400 text-black font-bold' 
                       : 'hover:bg-green-900 hover:text-green-300 border border-green-700'
                   }`}
                 >
-                  <span className="text-xs opacity-60">→ </span>{peer}
+                  <div className="flex items-baseline justify-between">
+                    <div>
+                      <span className="text-xs opacity-60">→ </span>
+                      <span className="font-semibold">{peer.nickname || peer.ip}</span>
+                    </div>
+                    <div className="text-xs opacity-60">{peer.ip}</div>
+                  </div>
                 </li>
               ))
             ) : (
@@ -106,9 +113,12 @@ function App() {
       </aside>
 
       <main className="flex-1 flex flex-col bg-black border-2 border-green-400 m-2">
-        <div className="bg-green-400 text-black px-4 py-2 font-bold text-sm flex justify-between items-center">
+          <div className="bg-green-400 text-black px-4 py-2 font-bold text-sm flex justify-between items-center">
           <div>
-            {selectedPeer ? `[CONNECTED] ${selectedPeer}` : '[STANDBY] Select a peer'}
+            {selectedPeer ? (`[CONNECTED] ${(() => {
+              const p = peers.find(x => x.ip === selectedPeer);
+              return p ? (p.nickname || p.ip) : selectedPeer;
+            })()}`) : '[STANDBY] Select a peer'}
           </div>
           <div className="text-xs opacity-70">
             {new Date().toLocaleTimeString()}

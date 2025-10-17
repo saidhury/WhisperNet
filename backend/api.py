@@ -44,7 +44,8 @@ class ConnectionManager:
 manager = ConnectionManager()
 router = APIRouter()
 
-discovered_peers = set()
+# discovered_peers previously held IP strings; switch to a mapping of ip->nickname
+discovered_peers = {}
 
 def handle_incoming_message(message: bytes, sender_ip: bytes):
     global loop
@@ -59,15 +60,22 @@ def handle_incoming_message(message: bytes, sender_ip: bytes):
     try:
         data = json.loads(message_str)
         if data.get("type") == "DISCOVERY":
-            if sender_ip_str not in discovered_peers:
-                print(f"Discovered new peer: {sender_ip_str}")
-                discovered_peers.add(sender_ip_str)
-                
+            # discovery may include an optional nickname
+            nickname = data.get("nickname") or sender_ip_str
+            previous = discovered_peers.get(sender_ip_str)
+            discovered_peers[sender_ip_str] = nickname
+
+            if previous != nickname:
+                print(f"Discovered/updated peer: {sender_ip_str} -> {nickname}")
+
+                # Build payload as list of { ip, nickname }
+                peers_payload = [{"ip": ip, "nickname": name} for ip, name in discovered_peers.items()]
+
                 update_message = {
                     "type": "PEER_LIST_UPDATE",
-                    "payload": list(discovered_peers)
+                    "payload": peers_payload
                 }
-                
+
                 if loop:
                     asyncio.run_coroutine_threadsafe(
                         manager.broadcast(json.dumps(update_message)), 
@@ -97,7 +105,10 @@ async def health_check():
 
 @router.get("/peers")
 async def get_peers():
-    return list(discovered_peers)
+    """
+    Returns list of peers as objects with ip and nickname.
+    """
+    return [{"ip": ip, "nickname": name} for ip, name in discovered_peers.items()]
 
 @router.post("/send")
 async def send_message(message: dict):
@@ -128,7 +139,7 @@ async def websocket_endpoint(websocket: WebSocket):
     print(f"New client connected: {websocket.client.host}")
     initial_data = {
         "type": "PEER_LIST_UPDATE",
-        "payload": list(discovered_peers)
+        "payload": [{"ip": ip, "nickname": name} for ip, name in discovered_peers.items()]
     }
     await websocket.send_text(json.dumps(initial_data))
     
@@ -142,9 +153,12 @@ async def websocket_endpoint(websocket: WebSocket):
 @router.post("/test/discover")
 async def test_discover(data: dict):
     sender_ip = data.get('sender_ip')
-    if sender_ip and sender_ip not in discovered_peers:
-        discovered_peers.add(sender_ip)
-        update = {"type": "PEER_LIST_UPDATE", "payload": list(discovered_peers)}
+    # Allow tests to inject a peer with optional nickname
+    nickname = data.get('nickname') or sender_ip
+    if sender_ip:
+        discovered_peers[sender_ip] = nickname
+        peers_payload = [{"ip": ip, "nickname": name} for ip, name in discovered_peers.items()]
+        update = {"type": "PEER_LIST_UPDATE", "payload": peers_payload}
         await manager.broadcast(json.dumps(update))
     return {"status": "ok"}
 
