@@ -1,6 +1,50 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Terminal, Zap } from 'lucide-react';
 
+// URL regex pattern that matches http://, https://, and www. URLs
+const URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<]+\b/g;
+
+// Component to render message content with clickable links
+const MessageContent = ({ content }) => {
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  // Find all URLs in the content
+  while ((match = URL_PATTERN.exec(content)) !== null) {
+    const url = match[0];
+    const startIndex = match.index;
+    
+    // Add text before the URL
+    if (startIndex > lastIndex) {
+      parts.push(content.slice(lastIndex, startIndex));
+    }
+    
+    // Add the URL as a link
+    const href = url.startsWith('www.') ? `https://${url}` : url;
+    parts.push(
+      <a
+        key={startIndex}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-400 hover:text-blue-300 underline"
+      >
+        {url}
+      </a>
+    );
+    
+    lastIndex = startIndex + url.length;
+  }
+  
+  // Add remaining text after the last URL
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+  
+  return <>{parts}</>;
+};
+
 function App() {
   const [peers, setPeers] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -133,7 +177,9 @@ function App() {
                   [{new Date().toLocaleTimeString()}] {m.sender === 'you' ? '< OUT' : '> IN'}
                 </div>
                 <div className={`pl-4 border-l-2 ${m.sender === 'you' ? 'border-green-600' : 'border-green-400'}`}>
-                  <span className="text-green-400">{m.content}</span>
+                  <span className="text-green-400">
+                    <MessageContent content={m.content} />
+                  </span>
                 </div>
               </div>
             ))
