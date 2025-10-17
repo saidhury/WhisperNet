@@ -65,6 +65,7 @@ const MessageContent = ({ content }) => {
 };
 
 function App() {
+  // peers will be array of { ip, nickname }
   const [peers, setPeers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [selectedPeer, setSelectedPeer] = useState(null);
@@ -138,9 +139,12 @@ function App() {
       <Sidebar peers={peers} selectedPeer={selectedPeer} setSelectedPeer={setSelectedPeer} />
 
       <main className="flex-1 flex flex-col bg-black border-2 border-green-400 m-2">
-        <div className="bg-green-400 text-black px-4 py-2 font-bold text-sm flex justify-between items-center">
+          <div className="bg-green-400 text-black px-4 py-2 font-bold text-sm flex justify-between items-center">
           <div>
-            {selectedPeer ? `[CONNECTED] ${selectedPeer}` : '[STANDBY] Select a peer'}
+            {selectedPeer ? (`[CONNECTED] ${(() => {
+              const p = peers.find(x => x.ip === selectedPeer);
+              return p ? (p.nickname || p.ip) : selectedPeer;
+            })()}`) : '[STANDBY] Select a peer'}
           </div>
           <div className="text-xs opacity-70">
             {new Date().toLocaleTimeString()}
