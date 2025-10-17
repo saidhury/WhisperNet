@@ -31,7 +31,7 @@ async def discover_peers_task():
         # Include a hardcoded nickname in discovery packets for now
         discovery_payload = {"type": "DISCOVERY", "nickname": "WhisperNode"}
         discovery_message = json.dumps(discovery_payload)
-        broadcast_address = '192.168.56.255'.encode('utf-8')
+        broadcast_address = api.BROADCAST_IP.encode('utf-8')
         core_lib.send_udp_message(discovery_message.encode('utf-8'), broadcast_address, UDP_PORT)
         await asyncio.sleep(5)
 
