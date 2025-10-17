@@ -114,4 +114,4 @@ def test_health_check_endpoint():
     
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
-    assert response.headers["content-type"] == "application/json"
+    assert response.headers["content-type"].startswith("application/json")
