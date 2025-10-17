@@ -69,6 +69,15 @@ except Exception as e:
             self._listener_thread = threading.Thread(target=_listen, daemon=True)
             self._listener_thread.start()
 
+        def stop_udp_listener(self):
+            self._running = False
+            if self._sock:
+                try:
+                    self._sock.close()
+                except Exception:
+                    pass
+                self._sock = None
+
         def send_udp_message(self, message_bytes, addr_bytes, port):
             addr = addr_bytes.decode('utf-8') if isinstance(addr_bytes, (bytes, bytearray)) else str(addr_bytes)
             s = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
