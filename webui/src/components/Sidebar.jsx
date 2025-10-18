@@ -1,5 +1,8 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Terminal, Zap } from 'lucide-react';
+
+const APP_VERSION = 'v0.1.0';
 
 const Sidebar = ({ peers, selectedPeer, setSelectedPeer }) => {
   return (
@@ -9,7 +12,7 @@ const Sidebar = ({ peers, selectedPeer, setSelectedPeer }) => {
           <Terminal size={20} />
           <h1 className="text-lg font-bold tracking-wider">WHISPERNET</h1>
         </div>
-        <div className="text-xs text-green-300 opacity-70">v0.1.0</div>
+        <div className="text-xs text-green-300 opacity-70">{APP_VERSION}</div>
       </div>
 
       <div className="p-4 border-b border-green-400 opacity-70">
@@ -29,11 +32,20 @@ const Sidebar = ({ peers, selectedPeer, setSelectedPeer }) => {
             peers.map(peer => (
               <li
                 key={peer}
+                tabIndex={0}
+                role="button"
+                aria-pressed={selectedPeer === peer}
                 onClick={() => setSelectedPeer(peer)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedPeer(peer);
+                  }
+                }}
                 className={`p-2 rounded cursor-pointer text-sm transition-all ${
                   selectedPeer === peer
                     ? 'bg-green-400 text-black font-bold'
-                    : 'hover:bg-green-900 hover:text-green-300 border border-green-700'
+                    : 'hover:bg-green-900 hover:text-green-300 border border-green-700 focus:outline-none focus:ring-2 focus:ring-green-400'
                 }`}
               >
                 <span className="text-xs opacity-60">→ </span>{peer}
@@ -51,6 +63,12 @@ const Sidebar = ({ peers, selectedPeer, setSelectedPeer }) => {
       </div>
     </aside>
   );
+};
+
+Sidebar.propTypes = {
+  peers: PropTypes.arrayOf(PropTypes.string).isRequired,
+  selectedPeer: PropTypes.string,
+  setSelectedPeer: PropTypes.func.isRequired,
 };
 
 export default Sidebar;
