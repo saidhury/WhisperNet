@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { Terminal, Zap } from 'lucide-react';
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || 'v0.1.0';
 
 const Sidebar = ({ peers = [], selectedPeer = null, setSelectedPeer }) => {
-  const [focusedIndex, setFocusedIndex] = useState(peers.indexOf(selectedPeer));
-
   const handleKeyDown = (e, peer, index) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       setSelectedPeer(peer);
-      setFocusedIndex(index);
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       const nextIndex = (index + 1) % peers.length;
       setSelectedPeer(peers[nextIndex]);
-      setFocusedIndex(nextIndex);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       const prevIndex = index === 0 ? peers.length - 1 : index - 1;
       setSelectedPeer(peers[prevIndex]);
-      setFocusedIndex(prevIndex);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      if (peers.length) setSelectedPeer(peers[0]);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      if (peers.length) setSelectedPeer(peers[peers.length - 1]);
     }
   };
+
+  // Ensure roving tabindex always exposes at least one tabbable option
+  const hasValidSelection = selectedPeer != null && peers.includes(selectedPeer);
   return (
     <aside className="w-64 bg-black border-r-2 border-green-400 flex flex-col overflow-hidden">
       <div className="p-4 border-b-2 border-green-400">
@@ -46,20 +50,22 @@ const Sidebar = ({ peers = [], selectedPeer = null, setSelectedPeer }) => {
 
       <div className="flex-1 flex flex-col p-4">
         <div className="text-xs uppercase tracking-widest mb-3 text-green-300">Connected Peers</div>
-        <ul className="space-y-1 overflow-y-auto flex-1" role="listbox" aria-label="Connected Peers">
+        <ul
+          className="space-y-1 overflow-y-auto flex-1"
+          role="listbox"
+          aria-label="Connected Peers"
+          aria-busy={peers.length === 0}
+        >
           {peers.length > 0 ? (
             peers.map((peer, index) => (
               <li
                 key={peer}
-                tabIndex={selectedPeer === peer ? 0 : -1}
+                tabIndex={hasValidSelection ? (selectedPeer === peer ? 0 : -1) : (index === 0 ? 0 : -1)}
                 role="option"
                 aria-selected={selectedPeer === peer}
-                onClick={() => {
-                  setSelectedPeer(peer);
-                  setFocusedIndex(index);
-                }}
+                onClick={() => setSelectedPeer(peer)}
                 onKeyDown={(e) => handleKeyDown(e, peer, index)}
-                className={`p-2 rounded cursor-pointer text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-400 ${
+                className={`p-2 rounded cursor-pointer text-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400 ${
                   selectedPeer === peer
                     ? 'bg-green-400 text-black font-bold'
                     : 'hover:bg-green-900 hover:text-green-300 border border-green-700'
@@ -69,7 +75,7 @@ const Sidebar = ({ peers = [], selectedPeer = null, setSelectedPeer }) => {
               </li>
             ))
           ) : (
-            <li className="text-green-700 text-sm italic">No peers detected</li>
+            <li role="none" className="text-green-700 text-sm italic">No peers detected</li>
           )}
         </ul>
       </div>
