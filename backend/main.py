@@ -38,6 +38,7 @@ async def startup_event():
     api.loop = asyncio.get_running_loop()
     core_lib.start_udp_listener(UDP_PORT, c_callback_handler)
     asyncio.create_task(discover_peers_task())
+    asyncio.create_task(api.check_stale_peers_task())
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
