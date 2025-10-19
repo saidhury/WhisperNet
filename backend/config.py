@@ -1,0 +1,2 @@
+PROTOCOL_VERSION = 1
+NICKNAME = "SomeUser"
