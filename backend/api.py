@@ -5,6 +5,7 @@ import json
 import socket
 from bindings import core_lib
 import netifaces
+from backend import config
 
 BROADCAST_IP = "255.255.255.255"
 

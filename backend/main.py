@@ -3,6 +3,7 @@ import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import api
+import json
 from bindings import core_lib, ON_MESSAGE_RECEIVED_FUNC
 from backend import config
 
@@ -47,7 +48,7 @@ async def startup_event():
     print("Starting WhisperNet core...")
     api.loop = asyncio.get_running_loop()
     core_lib.start_udp_listener(UDP_PORT, c_callback_handler)
-    asyncio.create_task(discover_peers_task())
+    discovery_task = asyncio.create_task(discover_peers_task())
 
 
 if __name__ == "__main__":
