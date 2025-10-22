@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
-import Sidebar from './components/Sidebar';
+import Sidebar from './components/Sidebar'
 
 // Component to render message content with clickable links
 const MessageContent = ({ content }) => {
