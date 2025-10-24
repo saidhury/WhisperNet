@@ -3,6 +3,10 @@ import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import api 
+from dotenv import load_dotenv
+
+load_dotenv()  # Load variables from the .env file
+
 from bindings import core_lib, ON_MESSAGE_RECEIVED_FUNC
 
 UDP_PORT = 8888

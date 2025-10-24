@@ -7,10 +7,11 @@ import socket
 import time
 from bindings import core_lib
 import netifaces
+import os
 
 BROADCAST_IP = '255.255.255.255'
-PEER_TIMEOUT = 15  # Seconds until a peer is considered stale
-PEER_CHECK_INTERVAL = 5 # How often to check for stale peers
+PEER_TIMEOUT = int(os.getenv("PEER_TIMEOUT", "15"))  # Seconds until a peer is considered stale
+PEER_CHECK_INTERVAL = int(os.getenv("PEER_CHECK_INTERVAL", "5")) # How often to check for stale peers
 
 def get_all_own_ips():
     ips = []
