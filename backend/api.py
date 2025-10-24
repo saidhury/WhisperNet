@@ -52,6 +52,21 @@ router = APIRouter()
 discovered_peers: Dict[str, float] = {} # Maps IP to last_seen timestamp (monotonic)
 discovered_peers_lock = threading.Lock()
 
+def _update_peer_last_seen(ip: str) -> tuple[bool, list[str]]:
+    """
+    Updates a peer's last seen time and returns whether it was a new peer.
+    Returns (is_new_peer, peers_snapshot) under lock.
+    """
+    is_new = False
+    peers_snapshot = []
+    with discovered_peers_lock:
+        if ip not in discovered_peers:
+            is_new = True
+        discovered_peers[ip] = time.monotonic()
+        if is_new:
+            peers_snapshot = list(discovered_peers.keys())
+    return is_new, peers_snapshot
+
 def handle_incoming_message(message: bytes, sender_ip: bytes):
     global loop
     sender_ip_str = sender_ip.decode('utf-8', errors='ignore')
@@ -65,16 +80,7 @@ def handle_incoming_message(message: bytes, sender_ip: bytes):
     try:
         data = json.loads(message_str)
         if data.get("type") == "DISCOVERY":
-            now = time.monotonic()
-            peer_list_updated = False
-            with discovered_peers_lock:
-                if sender_ip_str not in discovered_peers:
-                    print(f"Discovered new peer: {sender_ip_str}")
-                    peer_list_updated = True
-                discovered_peers[sender_ip_str] = now
-                
-                if peer_list_updated:
-                    peers_snapshot = list(discovered_peers.keys())
+            peer_list_updated, peers_snapshot = _update_peer_last_seen(sender_ip_str)
 
             if peer_list_updated and loop:
                 update_message = {
@@ -184,14 +190,7 @@ async def websocket_endpoint(websocket: WebSocket):
 async def test_discover(data: dict):
     sender_ip = data.get('sender_ip')
     if sender_ip:
-        peer_list_updated = False
-        peers_snapshot = []
-        with discovered_peers_lock:
-            if sender_ip not in discovered_peers:
-                peer_list_updated = True
-            discovered_peers[sender_ip] = time.monotonic()
-            if peer_list_updated:
-                peers_snapshot = list(discovered_peers.keys())
+        peer_list_updated, peers_snapshot = _update_peer_last_seen(sender_ip)
         
         if peer_list_updated:
             update = {"type": "PEER_LIST_UPDATE", "payload": peers_snapshot}
