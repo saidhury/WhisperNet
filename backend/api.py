@@ -81,10 +81,12 @@ def handle_incoming_message(message: bytes, sender_ip: bytes):
                     "type": "PEER_LIST_UPDATE",
                     "payload": peers_snapshot
                 }
-                asyncio.run_coroutine_threadsafe(
+                fut = asyncio.run_coroutine_threadsafe(
                     manager.broadcast(json.dumps(update_message)), 
                     loop
                 )
+                # Log broadcast errors without breaking the UDP thread
+                fut.add_done_callback(lambda f: (exc := f.exception()) and print(f"[broadcast error] {exc}"))
 
         elif data.get("type") == "MESSAGE":
              update_message = {
@@ -92,10 +94,12 @@ def handle_incoming_message(message: bytes, sender_ip: bytes):
                 "payload": {"sender": sender_ip_str, "content": data.get("content")}
              }
              if loop:
-                asyncio.run_coroutine_threadsafe(
+                fut = asyncio.run_coroutine_threadsafe(
                     manager.broadcast(json.dumps(update_message)),
                     loop
                 )
+                # Log broadcast errors without breaking the UDP thread
+                fut.add_done_callback(lambda f: (exc := f.exception()) and print(f"[broadcast error] {exc}"))
 
     except (json.JSONDecodeError, RuntimeError) as e:
         print(f"Error processing incoming message: {e}")
