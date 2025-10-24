@@ -8,6 +8,7 @@ import time
 from bindings import core_lib
 import netifaces
 import os
+from backend import config
 
 BROADCAST_IP = '255.255.255.255'
 PEER_TIMEOUT = int(os.getenv("PEER_TIMEOUT", "15"))  # Seconds until a peer is considered stale
@@ -80,6 +81,12 @@ def handle_incoming_message(message: bytes, sender_ip: bytes):
     try:
         data = json.loads(message_str)
         if data.get("type") == "DISCOVERY":
+            peer_version = data.get("version")
+            if peer_version and peer_version != config.PROTOCOL_VERSION:
+                print(
+                    f"Warning: Discovered peer at {sender_ip_str} with incompatible protocol version {peer_version}. Self is version {config.PROTOCOL_VERSION}."
+                )
+
             peer_list_updated, peers_snapshot = _update_peer_last_seen(sender_ip_str)
 
             if peer_list_updated and loop:
@@ -138,6 +145,12 @@ async def check_stale_peers_task():
             }
             await manager.broadcast(json.dumps(update_message))
 
+@router.get("/health")
+async def health_check():
+    """
+    A simple endpoint to confirm that the API service is running.
+    """
+    return {"status": "ok"}
 
 @router.get("/peers")
 async def get_peers():

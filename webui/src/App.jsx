@@ -1,5 +1,68 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Terminal, Zap } from 'lucide-react';
+import { Send } from 'lucide-react';
+import Sidebar from './components/Sidebar'
+
+// Component to render message content with clickable links
+const MessageContent = ({ content }) => {
+  // URL regex pattern that matches http://, https://, and www. URLs
+  const URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<]+\b/g;
+  const parts = [];
+  let lastIndex = 0;
+
+  // Use matchAll to safely iterate URLs
+  const matches = [...content.matchAll(URL_PATTERN)];
+
+  matches.forEach((match) => {
+    const url = match[0];
+    const startIndex = match.index;
+
+    // Add plain text before the link
+    if (startIndex > lastIndex) {
+      parts.push(content.slice(lastIndex, startIndex));
+    }
+
+    // Normalize link (add https:// for www.)
+    let href = url.startsWith('www.') ? `https://${url}` : url;
+
+    // ✅ Validate URL scheme for security
+    try {
+      const urlObj = new URL(href);
+      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+        // Skip invalid or non-http(s) URLs
+        parts.push(url);
+        lastIndex = startIndex + url.length;
+        return;
+      }
+    } catch {
+      // If invalid URL, render as plain text
+      parts.push(url);
+      lastIndex = startIndex + url.length;
+      return;
+    }
+
+    // Add clickable link
+    parts.push(
+      <a
+        key={startIndex}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-500 underline hover:text-blue-700"
+      >
+        {url}
+      </a>
+    );
+
+    lastIndex = startIndex + url.length;
+  });
+
+  // Add remaining text after last link
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return <>{parts}</>;
+};
 
 function App() {
   const [peers, setPeers] = useState([]);
@@ -63,55 +126,16 @@ function App() {
     setText('');
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-black text-green-400 font-mono overflow-hidden" style={{ fontFamily: '"Courier New", monospace' }}>
-      <aside className="w-64 bg-black border-r-2 border-green-400 flex flex-col overflow-hidden">
-        <div className="p-4 border-b-2 border-green-400">
-          <div className="flex items-center gap-2 mb-2">
-            <Terminal size={20} />
-            <h1 className="text-lg font-bold tracking-wider">WHISPERNET</h1>
-          </div>
-          <div className="text-xs text-green-300 opacity-70">v0.1.0</div>
-        </div>
-
-        <div className="p-4 border-b border-green-400 opacity-70">
-          <div className="text-xs uppercase tracking-widest mb-2">Status</div>
-          <div className="flex items-center gap-2">
-            <Zap size={14} className="text-green-300" />
-            <span className="text-sm">
-              {peers.length > 0 ? `${peers.length} peer${peers.length !== 1 ? 's' : ''} online` : 'Scanning...'}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col p-4">
-          <div className="text-xs uppercase tracking-widest mb-3 text-green-300">Connected Peers</div>
-          <ul className="space-y-1 overflow-y-auto flex-1">
-            {peers.length > 0 ? (
-              peers.map(peer => (
-                <li 
-                  key={peer}
-                  onClick={() => setSelectedPeer(peer)}
-                  className={`p-2 rounded cursor-pointer text-sm transition-all ${
-                    selectedPeer === peer 
-                      ? 'bg-green-400 text-black font-bold' 
-                      : 'hover:bg-green-900 hover:text-green-300 border border-green-700'
-                  }`}
-                >
-                  <span className="text-xs opacity-60">→ </span>{peer}
-                </li>
-              ))
-            ) : (
-              <li className="text-green-700 text-sm italic">No peers detected</li>
-            )}
-          </ul>
-        </div>
-
-        <div className="p-4 border-t border-green-400 text-xs opacity-50">
-          <div>whispernet@node</div>
-          <div>session_active</div>
-        </div>
-      </aside>
+      <Sidebar peers={peers} selectedPeer={selectedPeer} setSelectedPeer={setSelectedPeer} />
 
       <main className="flex-1 flex flex-col bg-black border-2 border-green-400 m-2">
         <div className="bg-green-400 text-black px-4 py-2 font-bold text-sm flex justify-between items-center">
@@ -141,7 +165,9 @@ function App() {
                   [{new Date().toLocaleTimeString()}] {m.sender === 'you' ? '< OUT' : '> IN'}
                 </div>
                 <div className={`pl-4 border-l-2 ${m.sender === 'you' ? 'border-green-600' : 'border-green-400'}`}>
-                  <span className="text-green-400">{m.content}</span>
+                  <span className="text-green-400">
+                    <MessageContent content={m.content} />
+                  </span>
                 </div>
               </div>
             ))
@@ -149,22 +175,24 @@ function App() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t-2 border-green-400 bg-black p-4" onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(e)}>
-          <div className="flex items-center gap-2">
-            <span className="text-green-400">$</span>
-            <input
-              type="text"
+        <div className="border-t-2 border-green-400 bg-black p-4">
+          <div className="flex gap-2">
+            <span className="text-green-400 leading-10">$</span>
+            <textarea
               value={text}
               onChange={e => setText(e.target.value)}
-              placeholder={selectedPeer ? 'Enter message...' : 'Select peer first...'}
+              onKeyDown={handleKeyDown}
+              placeholder={selectedPeer ? 'Enter message... (Shift+Enter for new line)' : 'Select peer first...'}
               disabled={!selectedPeer}
-              className="flex-1 bg-black border-0 outline-none text-green-400 placeholder-green-700 caret-green-400"
+              className="flex-1 bg-black border-0 outline-none text-green-400 placeholder-green-700 caret-green-400 resize-none overflow-y-auto leading-10"
+              style={{ minHeight: '40px', maxHeight: '120px' }}
+              rows={1}
               autoFocus
             />
             <button
               onClick={handleSendMessage}
               disabled={!selectedPeer || !text.trim()}
-              className="text-green-400 hover:text-green-300 disabled:text-green-700 transition-colors"
+              className="text-green-400 hover:text-green-300 disabled:text-green-700 transition-colors self-start leading-10"
             >
               <Send size={18} />
             </button>

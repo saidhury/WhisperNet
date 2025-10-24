@@ -3,3 +3,6 @@ uvicorn[standard]
 python-multipart
 netifaces
 python-dotenv
+pytest
+pytest-cov
+httpx
