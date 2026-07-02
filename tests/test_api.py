@@ -18,13 +18,21 @@ mock_core_lib = MagicMock()
 mock_core_lib.send_udp_message = MagicMock()
 mock_core_lib.start_udp_listener = MagicMock()
 
-sys.modules['bindings'] = MagicMock(
+bindings_mock = MagicMock(
     core_lib=mock_core_lib,
     ON_MESSAGE_RECEIVED_FUNC=MagicMock()
 )
+sys.modules['bindings'] = bindings_mock
+sys.modules['backend.bindings'] = bindings_mock
 
 # Now we can safely import the app
 from main import app
+
+# Clean up sys.modules so other tests (like test_udp.py) can load the real library
+if 'bindings' in sys.modules:
+    del sys.modules['bindings']
+if 'backend.bindings' in sys.modules:
+    del sys.modules['backend.bindings']
 
 client = TestClient(app)
 

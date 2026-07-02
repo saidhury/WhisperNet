@@ -1,15 +1,15 @@
 # WhisperNet Roadmap
 
 ## Phase 1: Core Functionality (MVP)
-- [ ] UDP Peer Discovery
-- [ ] UDP Direct Messaging
-- [ ] C++ Core Engine
-- [ ] Basic Web UI
+- [x] UDP Peer Discovery
+- [x] UDP Direct Messaging
+- [x] C++ Core Engine
+- [x] Basic Web UI
 
 ## Phase 2: Features
 - [ ] Symmetric AES Encryption (static key)
-- [ ] User Nicknames
-- [ ] Peer Online/Offline Status
+- [x] User Nicknames
+- [x] Peer Online/Offline Status (implemented via stale peer checking)
 
 ## Phase 3: Advanced
 - [ ] End-to-End Encryption (Key Exchange)

@@ -150,3 +150,8 @@ webpack.config.js.cache
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# WhisperNet Consumer Binaries & Static Assets
+whispernet.exe
+whispernet
+/backend/static/

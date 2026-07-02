@@ -12,8 +12,12 @@
 #endif
 
 extern "C" {
-    DLL_EXPORT void start_udp_listener(int port, void (*on_message_received)(const char* message, const char* sender_ip));
+    DLL_EXPORT int start_udp_listener(int port, void (*on_message_received)(const char* message, const char* sender_ip, int sender_port));
+    DLL_EXPORT void stop_udp_listener();
     DLL_EXPORT void send_udp_message(const char* message, const char* recipient_ip, int port);
+    DLL_EXPORT void send_broadcast_message(const char* message, int port);
+    DLL_EXPORT int join_multicast_group(const char* multicast_ip);
+    DLL_EXPORT int get_local_ip(char* out_buffer, int max_len);
 }
 
 #endif

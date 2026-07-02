@@ -5,11 +5,12 @@ from backend.bindings import core_lib, ON_MESSAGE_RECEIVED_FUNC
 
 received_data = None
 
-def mock_callback(message, sender_ip):
+def mock_callback(message, sender_ip, sender_port):
     global received_data
     received_data = {
         "message": message.decode('utf-8'),
-        "sender_ip": sender_ip.decode('utf-8')
+        "sender_ip": sender_ip.decode('utf-8'),
+        "sender_port": sender_port
     }
 
 class TestUdpCore(unittest.TestCase):
@@ -23,12 +24,15 @@ class TestUdpCore(unittest.TestCase):
         c_callback = ON_MESSAGE_RECEIVED_FUNC(mock_callback)
         core_lib.start_udp_listener(test_port, c_callback)
         time.sleep(0.1)
-        core_lib.send_udp_message(test_message.encode('utf-8'), b'127.0.0.1', test_port)
-        time.sleep(0.1)
+        try:
+            core_lib.send_udp_message(test_message.encode('utf-8'), b'127.0.0.1', test_port)
+            time.sleep(0.1)
 
-        self.assertIsNotNone(received_data)
-        self.assertEqual(received_data["message"], test_message)
-        self.assertEqual(received_data["sender_ip"], "127.0.0.1")
+            self.assertIsNotNone(received_data)
+            self.assertEqual(received_data["message"], test_message)
+            self.assertEqual(received_data["sender_ip"], "127.0.0.1")
+        finally:
+            core_lib.stop_udp_listener()
 
 if __name__ == '__main__':
     print("Run this after building the C++ core library.")

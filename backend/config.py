@@ -1,2 +1,5 @@
+import os
+
 PROTOCOL_VERSION = 1
-NICKNAME = "SomeUser"
+# Allow overriding the nickname via an Environment Variable
+NICKNAME = os.getenv("NICKNAME", "DefaultUser")

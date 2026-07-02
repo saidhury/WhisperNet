@@ -1,15 +1,16 @@
 import React from 'react'
-import { Terminal, Zap } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import logo from '../assets/logo.png'
 
-const Sidebar = ({ peers, selectedPeer, setSelectedPeer }) => {
+const Sidebar = ({ peers, selectedPeerIp, setSelectedPeerIp }) => {
   return (
-    <aside className="w-64 bg-black border-r-2 border-green-400 flex flex-col overflow-hidden">
+    <aside className="w-full h-full bg-black border-r-2 border-green-400 flex flex-col overflow-hidden">
       <div className="p-4 border-b-2 border-green-400">
         <div className="flex items-center gap-2 mb-2">
-          <Terminal size={20} />
+          <img src={logo} alt="logo" className="w-5 h-5" />
           <h1 className="text-lg font-bold tracking-wider">WHISPERNET</h1>
         </div>
-        <div className="text-xs text-green-300 opacity-70">v0.1.0</div>
+        <div className="text-xs text-green-300 opacity-70">v1.0.0</div>
       </div>
 
       <div className="p-4 border-b border-green-400 opacity-70">
@@ -17,7 +18,7 @@ const Sidebar = ({ peers, selectedPeer, setSelectedPeer }) => {
         <div className="flex items-center gap-2">
           <Zap size={14} className="text-green-300" />
           <span className="text-sm">
-            {peers.length > 0 ? `${peers.length} peer${peers.length !== 1 ? 's' : ''} online` : 'Scanning...'}
+            {peers.length > 0 ? `${peers.length} peer${peers.length !== 1 ? 's' : ''} online` : 'Scanning LAN...'}
           </span>
         </div>
       </div>
@@ -28,15 +29,21 @@ const Sidebar = ({ peers, selectedPeer, setSelectedPeer }) => {
           {peers.length > 0 ? (
             peers.map(peer => (
               <li 
-                key={peer}
-                onClick={() => setSelectedPeer(peer)}
-                className={`p-2 rounded cursor-pointer text-sm transition-all ${
-                  selectedPeer === peer 
+                key={peer.ip}
+                onClick={() => setSelectedPeerIp(peer.ip)}
+                className={`p-2 rounded cursor-pointer transition-all ${
+                  selectedPeerIp === peer.ip 
                     ? 'bg-green-400 text-black font-bold' 
                     : 'hover:bg-green-900 hover:text-green-300 border border-green-700'
                 }`}
               >
-                <span className="text-xs opacity-60">→ </span>{peer}
+                <div className="text-sm">
+                  <span className="text-xs opacity-60">→ </span>{peer.nickname} 
+                </div>
+                {/* Shows the technical IP mapping beneath their nickname */}
+                <div className={`text-[10px] ml-4 mt-1 ${selectedPeerIp === peer.ip ? 'text-black opacity-70' : 'opacity-40'}`}>
+                  {peer.ip}
+                </div>
               </li>
             ))
           ) : (

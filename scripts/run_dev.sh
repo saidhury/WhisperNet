@@ -74,11 +74,17 @@ else
   echo "No webui/package.json found, skipping npm install."
 fi
 
+# Set port defaults if not defined in the environment
+API_PORT="${API_PORT:-8000}"
+WEB_PORT="${WEB_PORT:-5173}"
+export API_PORT
+export WEB_PORT
+
 echo "--- Starting Backend (FastAPI) first ---"
-( cd backend && uvicorn main:app --reload --host 127.0.0.1 ) &
+( cd backend && uvicorn main:app --reload --host 127.0.0.1 --port "$API_PORT" ) &
 
 echo "--- Waiting for backend to be ready... ---"
 sleep 3
 
 echo "--- Starting Frontend (Vite) ---"
-( cd webui && npm run dev )
+( cd webui && npx vite --port "$WEB_PORT" )

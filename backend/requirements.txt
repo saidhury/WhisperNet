@@ -1,8 +1,10 @@
-fastapi
-uvicorn[standard]
+fastapi<0.100.0
+uvicorn
 python-multipart
-netifaces
+ifaddr
 python-dotenv
 pytest
 pytest-cov
-httpx
+httpx<0.28.0
+websockets
+pydantic<2.0.0
